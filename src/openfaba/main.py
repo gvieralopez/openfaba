@@ -1,6 +1,8 @@
 import logging
 import re
 import shutil
+import tempfile
+from collections import defaultdict
 from pathlib import Path
 
 import mutagen
@@ -11,107 +13,69 @@ from openfaba.io import clear_tags_and_set_title, convert_mki_to_mp3, convert_mp
 from openfaba.utils import id3header_constructor_monkeypatch
 
 logger = logging.getLogger(__name__)
-app = Typer(help="Encrypt/Decrypt Faba box MP3s")
+app = Typer(help="Obfuscate/Deobfuscate Faba box MP3s")
 
 
-def encrypt_command(
-    source_folder: Path, target_folder: Path, figure_id: str = "0000", extract_figure: bool = False
-) -> None:
-    """Encrypt MP3 files for Faba box."""
+def obfuscate_figure_files(figure_id: str, mp3_files: list[Path], target_folder: Path) -> None:
+    """Encrypt MP3 files for a specific figure."""
+    if not mp3_files:
+        logger.warning(f"No MP3 files provided for figure `{figure_id}`")
+        return
+    logger.info(f"Converting files for figure: `{figure_id}`")
+
+    figure_path = target_folder / f"K{figure_id}"
+    figure_path.mkdir(parents=True, exist_ok=True)
+
+    for i, mp3_file in enumerate(sorted(mp3_files), start=1):
+        logger.info(f"Converting file {mp3_file.name} [{i}/{len(mp3_files)}]")
+
+        filenum_str = f"{i:02d}"
+
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=True) as tmp:
+            temp_mp3 = Path(tmp.name)
+            shutil.copy(mp3_file, temp_mp3)
+
+            new_title = f"K{figure_id}CP{filenum_str}"
+            clear_tags_and_set_title(temp_mp3, new_title)
+
+            obfuscated_file = figure_path / f"CP{filenum_str}.MKI"
+            convert_mp3_to_mki(temp_mp3, obfuscated_file)
+
+
+def obfuscate_library(source_folder: Path, target_folder: Path) -> int:
+    """Obfuscate MP3 files for Faba box."""
     # monkeypatch out exceptions on invalid ID3 headers
     mutagen.id3._tags.ID3Header.__init__ = id3header_constructor_monkeypatch
 
-    count = 0
-    mp3_files: dict[str, list[Path]] = {}
+    all_mp3_files = sorted([p for p in source_folder.rglob("*") if p.suffix.lower() == ".mp3"])
+    files_by_figure: defaultdict[str, list[Path]] = defaultdict(list)
 
-    if extract_figure:
-        for root, _, filenames in source_folder.walk():
-            for filename in filenames:
-                full_path = Path(root) / filename
-                if filename.lower().endswith(".mp3"):
-                    # Extract figure ID from directory name (K####)
-                    match = re.search(r"[\\/]K(\d{4})$", str(root))
-                    if match:
-                        mp3_files.setdefault(match.group(1), []).append(full_path)
-                        count += 1
-    else:
-        if not re.match(r"^\d{4}$", figure_id):
-            typer.echo("Error: Figure ID must be exactly 4 digits.", err=True)
-            raise typer.Exit(code=1)
+    for mp3 in all_mp3_files:
+        # Expect parent directory like ".../K####"
+        match = re.search(r"K(\d{4})$", mp3.parent.name)
+        figure_id = match.group(1) if match else "0000"
+        files_by_figure[figure_id].append(mp3)
 
-        for root, _, filenames in source_folder.walk():
-            for filename in filenames:
-                full_path = Path(root) / filename
-                if filename.lower().endswith(".mp3"):
-                    mp3_files.setdefault(figure_id, []).append(full_path)
-                    count += 1
+    for figure_id, mp3_files in files_by_figure.items():
+        obfuscate_figure_files(figure_id, mp3_files, target_folder)
 
-    if count == 0:
-        typer.echo("No MP3 files found in the source folder.", err=True)
-        raise typer.Exit(code=1)
-
-    iterator = 1
-    for figure in mp3_files:
-        figure_path = target_folder / f"K{figure}"
-        figure_path.mkdir(exist_ok=True, parents=True)
-
-        for filenum, file in enumerate(sorted(mp3_files[figure]), start=1):
-            typer.echo(f"=========================[{iterator}/{count}]")
-            typer.echo(f"Processing {file}...")
-
-            filenum_str = f"{filenum:02d}"
-            new_title = f"K{figure}CP{filenum_str}"
-            target_file = figure_path / f"CP{filenum_str}"
-
-            shutil.copy(file, target_file)
-            clear_tags_and_set_title(target_file, new_title)
-
-            encrypted_file = target_file.with_suffix(".MKI")
-            convert_mp3_to_mki(target_file, encrypted_file)
-            target_file.unlink()
-
-            iterator += 1
-
-    typer.echo(
-        f"Processing complete. Copy the files from '{target_folder}' directory to your Faba box."
-    )
+    return len(all_mp3_files)
 
 
-def decrypt_command(source_folder: Path, target_folder: Path) -> None:
-    """Decrypt MKI files from Faba box."""
-    count = 0
-    mki_files: dict[str, list[str]] = {}
+def deobfuscate_library(source_folder: Path, target_folder: Path) -> int:
+    """Deobfuscate MKI files from Faba box."""
+    mki_files = sorted([p for p in source_folder.rglob("*") if p.suffix.lower() == ".mki"])
 
-    for root, _, filenames in source_folder.walk():
-        for filename in filenames:
-            if filename.lower().endswith(".mki"):
-                rel_path = Path(root).relative_to(source_folder)
-                mki_files.setdefault(str(rel_path), []).append(filename)
-                count += 1
+    for i, mki_file in enumerate(mki_files, start=1):
+        rel_path = mki_file.relative_to(source_folder)
+        target_file = target_folder / rel_path
+        target_file.parent.mkdir(parents=True, exist_ok=True)
+        target_file = target_file.with_suffix(".mp3")
 
-    if count == 0:
-        typer.echo("No MKI files found in the source folder.", err=True)
-        raise typer.Exit(code=1)
+        logger.info(f"Converting file {mki_file.name} [{i}/{len(mki_files)}]")
+        convert_mki_to_mp3(mki_file, target_file)
 
-    iterator = 1
-    for subdir in mki_files:
-        subdir_path = target_folder / subdir
-        subdir_path.mkdir(parents=True, exist_ok=True)
-
-        for file in mki_files[subdir]:
-            typer.echo(f"=========================[{iterator}/{count}]")
-            typer.echo(f"Processing {Path(subdir) / file}...")
-
-            source_file = source_folder / subdir / file
-            target_file = target_folder / subdir / file
-
-            if target_file.suffix.lower() == ".mki":
-                target_file = target_file.with_suffix(".mp3")
-
-            convert_mki_to_mp3(source_file, target_file)
-            iterator += 1
-
-    typer.echo("Processing complete.")
+    return len(mki_files)
 
 
 @app.command()
@@ -134,15 +98,9 @@ def encrypt(
         file_okay=False,
         dir_okay=True,
     ),
-    figure_id: str = typer.Option(
-        "0000", "--figure-id", "-f", help="Faba NFC chip identifier (4 digit number 0001-9999)"
-    ),
-    extract_figure: bool = typer.Option(
-        False,
-        "--extract-figure",
-        "-x",
-        help="Get figure ID from directory name (MP3 files must be in folders named K0001-K9999)",
-    ),
+    # figure_id: str = typer.Option(
+    #     "0000", "--figure-id", "-f", help="Faba NFC chip identifier (4 digit number 0001-9999)"
+    # )
 ) -> None:
     """Encrypt MP3 files for Faba box."""
     if not source_folder.is_dir():
@@ -152,7 +110,12 @@ def encrypt(
         )
         raise typer.Exit(code=1)
 
-    encrypt_command(source_folder, target_folder, figure_id, extract_figure)
+    obfuscated = obfuscate_library(source_folder, target_folder)
+    if obfuscated == 0:
+        typer.echo("No MP3 files found in the source folder.", err=True)
+        raise typer.Exit(code=1)
+
+    typer.echo(f"Processing complete. Converted {obfuscated} files.")
 
 
 @app.command()
@@ -183,10 +146,15 @@ def decrypt(
         )
         raise typer.Exit(code=1)
 
-    decrypt_command(source_folder, target_folder)
+    deobfuscated = deobfuscate_library(source_folder, target_folder)
+    if deobfuscated == 0:
+        typer.echo("No MKI files found in the source folder.", err=True)
+        raise typer.Exit(code=1)
+
+    typer.echo(f"Processing complete. Converted {deobfuscated} files.")
 
 
-def main():
+def main() -> None:
     app()
 
 
