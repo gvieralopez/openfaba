@@ -42,9 +42,15 @@ def convert_mki_to_mp3(mki_file: Path, mp3_file: Path) -> None:
 
 def _clear_tags_and_set_title(mp3_file: Path, new_title: str) -> None:
     tags = MP3(mp3_file, ID3=ID3)
+
+    # If title already matches, skip to preserve exact original bytes
+    if "TIT2" in tags and len(tags) == 1 and str(tags["TIT2"].text[0]) == new_title:
+        return
+
+    # Ensure we write the title as UTF-16 (Encoding 1) and as a list of text
     tags.delete()
-    tags["TIT2"] = TIT2(encoding=3, text=new_title)
-    tags.save()
+    tags["TIT2"] = TIT2(encoding=1, text=[new_title])
+    tags.save(v2_version=3, padding=lambda x: 0)
 
 
 def _convert_mp3_to_mki(mp3_file: Path, mki_file: Path) -> None:

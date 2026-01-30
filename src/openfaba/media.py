@@ -28,8 +28,11 @@ def obfuscate_figure_files(figure_id: str, mp3_files: list[Path], target_folder:
 
         filenum_str = f"{i:02d}"
 
-        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=True) as tmp:
-            temp_mp3 = Path(tmp.name)
+        tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+        temp_mp3 = Path(tmp.name)
+        tmp.close()  # Close so we can write to it on Windows
+
+        try:
             shutil.copy(mp3_file, temp_mp3)
 
             new_title = f"K{figure_id}CP{filenum_str}"
@@ -37,6 +40,8 @@ def obfuscate_figure_files(figure_id: str, mp3_files: list[Path], target_folder:
 
             obfuscated_file = figure_path / f"CP{filenum_str}.MKI"
             convert_mp3_to_mki(temp_mp3, obfuscated_file)
+        finally:
+            temp_mp3.unlink(missing_ok=True)
 
 
 def obfuscate_library(source_folder: Path, target_folder: Path) -> int:
