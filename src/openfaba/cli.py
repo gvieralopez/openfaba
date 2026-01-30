@@ -4,7 +4,7 @@ from pathlib import Path
 import typer
 from typer import Typer
 
-from openfaba.media import deobfuscate_library, obfuscate_library
+from openfaba.media import deobfuscate_mki_library, obfuscate_mp3_library
 
 logger = logging.getLogger(__name__)
 app = Typer(help="Obfuscate/Deobfuscate Faba box MP3s")
@@ -42,7 +42,7 @@ def encrypt(
         )
         raise typer.Exit(code=1)
 
-    obfuscated = obfuscate_library(source_folder, target_folder)
+    obfuscated = obfuscate_mp3_library(source_folder, target_folder)
     if obfuscated == 0:
         typer.echo("No MP3 files found in the source folder.", err=True)
         raise typer.Exit(code=1)
@@ -78,7 +78,7 @@ def decrypt(
         )
         raise typer.Exit(code=1)
 
-    deobfuscated = deobfuscate_library(source_folder, target_folder)
+    deobfuscated = deobfuscate_mki_library(source_folder, target_folder)
     if deobfuscated == 0:
         typer.echo("No MKI files found in the source folder.", err=True)
         raise typer.Exit(code=1)

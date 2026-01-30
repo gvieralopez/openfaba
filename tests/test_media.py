@@ -2,7 +2,7 @@ import logging
 import tempfile
 from pathlib import Path
 
-from openfaba.media import deobfuscate_library, obfuscate_library
+from openfaba.media import deobfuscate_mki_library, obfuscate_mp3_library
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +15,12 @@ def test_obfuscate_deobfuscate_cycle(mki_library: Path) -> None:
         # Step 1: Deobfuscate the original library
         deobfuscate_dir = temp_path / "deobfuscated"
         deobfuscate_dir.mkdir()
-        deobfuscate_library(mki_library, deobfuscate_dir)
+        deobfuscate_mki_library(mki_library, deobfuscate_dir)
 
         # Step 2: Obfuscate the deobfuscated files
         obfuscate_dir = temp_path / "obfuscated"
         obfuscate_dir.mkdir()
-        obfuscate_library(deobfuscate_dir, obfuscate_dir)
+        obfuscate_mp3_library(deobfuscate_dir, obfuscate_dir)
 
         # Step 3: Compare the original and newly obfuscated files
         # Get all files from the original library

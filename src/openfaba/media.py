@@ -13,68 +13,133 @@ from openfaba.utils import id3header_constructor_monkeypatch
 logger = logging.getLogger(__name__)
 
 
-def obfuscate_figure_files(figure_id: str, mp3_files: list[Path], target_folder: Path) -> None:
-    """Encrypt MP3 files for a specific figure."""
-    if not mp3_files:
-        logger.warning(f"No MP3 files provided for figure `{figure_id}`")
-        return
-    logger.info(f"Converting files for figure: `{figure_id}`")
+def obfuscate_figure_mp3_files(
+    figure_id: str, source_mp3_files: list[Path], faba_library: Path
+) -> None:
+    """
+    Obfuscate a sequence of MP3 files for a single Faba figure.
 
-    figure_path = target_folder / f"K{figure_id}"
+    Each MP3 file is copied to a temporary location, stripped of metadata,
+    assigned a deterministic title, and converted to the proprietary MKI format.
+    Resulting files are written into the corresponding figure folder inside
+    the Faba library (e.g. ``K0104``).
+
+    Parameters
+    ----------
+    figure_id:
+        Four-digit Faba figure identifier (e.g. ``"0104"``).
+    source_mp3_files:
+        Ordered collection of source MP3 files to obfuscate for this figure.
+    faba_library:
+        Root path of the target Faba library (typically an ``MKI01`` folder).
+    """
+    if not source_mp3_files:
+        logger.warning("No MP3 files provided for figure `%s`", figure_id)
+        return
+
+    logger.info("Converting files for figure: `%s`", figure_id)
+
+    figure_path = faba_library / f"K{figure_id}"
     figure_path.mkdir(parents=True, exist_ok=True)
 
-    for i, mp3_file in enumerate(sorted(mp3_files), start=1):
-        logger.info(f"Converting file {mp3_file.name} [{i}/{len(mp3_files)}]")
+    for index, mp3_file in enumerate(sorted(source_mp3_files), start=1):
+        logger.info("Converting file %s [%d/%d]", mp3_file.name, index, len(source_mp3_files))
 
-        filenum_str = f"{i:02d}"
+        file_number = f"{index:02d}"
 
-        tmp = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
-        temp_mp3 = Path(tmp.name)
-        tmp.close()  # Close so we can write to it on Windows
+        temp_handle = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+        temp_mp3 = Path(temp_handle.name)
+        temp_handle.close()  # Required for Windows compatibility
 
         try:
             shutil.copy(mp3_file, temp_mp3)
 
-            new_title = f"K{figure_id}CP{filenum_str}"
+            new_title = f"K{figure_id}CP{file_number}"
             clear_tags_and_set_title(temp_mp3, new_title)
 
-            obfuscated_file = figure_path / f"CP{filenum_str}.MKI"
+            obfuscated_file = figure_path / f"CP{file_number}.MKI"
             convert_mp3_to_mki(temp_mp3, obfuscated_file)
         finally:
             temp_mp3.unlink(missing_ok=True)
 
 
-def obfuscate_library(source_folder: Path, target_folder: Path) -> int:
-    """Obfuscate MP3 files for Faba box."""
-    # monkeypatch out exceptions on invalid ID3 headers
+def obfuscate_mp3_library(
+    faba_library_mp3: Path, faba_library: Path, default_figure_id: str = "0000"
+) -> int:
+    """
+    Obfuscate a directory tree of MP3 files into a Faba-compatible MKI library.
+
+    MP3 files are discovered recursively. If a file resides inside a directory
+    named ``K####``, the digits are interpreted as the figure identifier.
+    Otherwise, ``default_figure_id`` is used.
+
+    Parameters
+    ----------
+    faba_library_mp3:
+        Path containing source MP3 files. Subfolders named ``K####`` will be
+        interpreted as per-figure groupings.
+    faba_library:
+        Destination Faba library root directory (typically an ``MKI01`` folder).
+        Per-figure subfolders (e.g. ``K0104``) will be created as needed.
+    default_figure_id:
+        Figure identifier to use when no ``K####`` directory can be inferred.
+
+    Returns
+    -------
+    int
+        Total number of MP3 files processed.
+    """
+    # Monkeypatch to tolerate malformed ID3 headers
     mutagen.id3._tags.ID3Header.__init__ = id3header_constructor_monkeypatch
 
-    all_mp3_files = sorted([p for p in source_folder.rglob("*") if p.suffix.lower() == ".mp3"])
+    all_mp3_files = sorted(p for p in faba_library_mp3.rglob("*") if p.suffix.lower() == ".mp3")
     files_by_figure: defaultdict[str, list[Path]] = defaultdict(list)
 
-    for mp3 in all_mp3_files:
-        # Expect parent directory like ".../K####"
-        match = re.search(r"K(\d{4})$", mp3.parent.name)
-        figure_id = match.group(1) if match else "0000"
-        files_by_figure[figure_id].append(mp3)
+    for mp3_file in all_mp3_files:
+        match = re.search(r"K(\d{4})$", mp3_file.parent.name)
+        figure_id = match.group(1) if match else default_figure_id
+        files_by_figure[figure_id].append(mp3_file)
 
-    for figure_id, mp3_files in files_by_figure.items():
-        obfuscate_figure_files(figure_id, mp3_files, target_folder)
+    for figure_id, figure_mp3_files in files_by_figure.items():
+        obfuscate_figure_mp3_files(figure_id, figure_mp3_files, faba_library)
 
     return len(all_mp3_files)
 
 
-def deobfuscate_library(source_folder: Path, target_folder: Path) -> int:
-    """Deobfuscate MKI files from Faba box."""
-    mki_files = sorted([p for p in source_folder.rglob("*") if p.suffix.lower() == ".mki"])
+def deobfuscate_mki_library(faba_library: Path, faba_library_mp3: Path) -> int:
+    """
+    Deobfuscate a Faba MKI library back into standard MP3 files.
 
-    for i, mki_file in enumerate(mki_files, start=1):
-        rel_path = mki_file.relative_to(source_folder)
-        target_file = target_folder / rel_path
+    MKI files are discovered recursively inside the Faba library. The original
+    folder structure is preserved in the output directory, with file extensions
+    converted to ``.mp3``.
+
+    Parameters
+    ----------
+    faba_library:
+        Source Faba library root directory (typically an ``MKI01`` folder)
+        containing per-figure subdirectories with ``.MKI`` files.
+    faba_library_mp3:
+        Destination directory where deobfuscated MP3 files will be written.
+
+    Returns
+    -------
+    int
+        Total number of MKI files converted.
+    """
+    mki_files = sorted(p for p in faba_library.rglob("*") if p.suffix.lower() == ".mki")
+
+    for index, mki_file in enumerate(mki_files, start=1):
+        relative_path = mki_file.relative_to(faba_library)
+        target_file = (faba_library_mp3 / relative_path).with_suffix(".mp3")
         target_file.parent.mkdir(parents=True, exist_ok=True)
-        target_file = target_file.with_suffix(".mp3")
 
-        logger.info(f"Converting file {mki_file.name} [{i}/{len(mki_files)}]")
+        logger.info(
+            "Converting file %s [%d/%d]",
+            mki_file.name,
+            index,
+            len(mki_files),
+        )
         convert_mki_to_mp3(mki_file, target_file)
 
     return len(mki_files)
