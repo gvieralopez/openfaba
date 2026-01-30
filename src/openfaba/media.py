@@ -106,6 +106,51 @@ def obfuscate_mp3_library(
     return len(all_mp3_files)
 
 
+def deobfuscate_figure_mki_files(figure_id: str, faba_library: Path, output_folder: Path) -> int:
+    """
+    Deobfuscate all MKI files for a single Faba figure into MP3 files.
+
+    MKI files are read from the corresponding figure directory inside the
+    Faba library (e.g. ``K0104``) and converted back to standard MP3 files.
+    The resulting MP3 files are written into a mirrored figure directory
+    under the ``output_folder`` path.
+
+    Parameters
+    ----------
+    figure_id:
+        Four-digit Faba figure identifier (e.g. ``"0104"``).
+    faba_library:
+        Root path of the source Faba library (typically an ``MKI01`` folder).
+    output_folder:
+        Root path where deobfuscated MP3 files will be written.
+
+    Returns
+    -------
+    int
+        Number of MKI files converted for this figure.
+    """
+    figure_path = faba_library / f"K{figure_id}"
+    if not figure_path.exists():
+        logger.warning("Figure directory not found for figure `%s`", figure_id)
+        return 0
+
+    mki_files = sorted(p for p in figure_path.iterdir() if p.suffix.lower() == ".mki")
+
+    if not mki_files:
+        logger.warning("No MKI files found for figure `%s`", figure_id)
+        return 0
+
+    target_figure_path = output_folder / f"K{figure_id}"
+    target_figure_path.mkdir(parents=True, exist_ok=True)
+
+    for index, mki_file in enumerate(mki_files, start=1):
+        target_file = (target_figure_path / mki_file.name).with_suffix(".mp3")
+        logger.info("Converting file %s [%d/%d]", mki_file.name, index, len(mki_files))
+        convert_mki_to_mp3(mki_file, target_file)
+
+    return len(mki_files)
+
+
 def deobfuscate_mki_library(faba_library: Path, faba_library_mp3: Path) -> int:
     """
     Deobfuscate a Faba MKI library back into standard MP3 files.
@@ -134,12 +179,7 @@ def deobfuscate_mki_library(faba_library: Path, faba_library_mp3: Path) -> int:
         target_file = (faba_library_mp3 / relative_path).with_suffix(".mp3")
         target_file.parent.mkdir(parents=True, exist_ok=True)
 
-        logger.info(
-            "Converting file %s [%d/%d]",
-            mki_file.name,
-            index,
-            len(mki_files),
-        )
+        logger.info("Converting file %s [%d/%d]", mki_file.name, index, len(mki_files))
         convert_mki_to_mp3(mki_file, target_file)
 
     return len(mki_files)
