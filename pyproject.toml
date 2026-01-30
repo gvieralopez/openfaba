@@ -10,7 +10,7 @@ authors = [
 license = { text = "MIT" }
 
 dependencies = [
-    "gooey>=1.0.8.1",
+    "typer>=0.9.0",
     "mutagen>=1.47.0",
 ]
 
@@ -18,7 +18,6 @@ dependencies = [
 dev = [
     "bumpver",
     "mypy",
-
     "pytest",
     "pytest-cov",
     "pytest-dotenv",
@@ -39,7 +38,7 @@ package-dir = { "" = "src" }
 openfaba = "openfaba.main:main"
 
 [tool.ruff]
-line-length = 88
+line-length = 100
 indent-width = 4
 target-version = "py313"
 
@@ -74,6 +73,8 @@ select = [
 ignore = [
     "S101", # Use of assert function
     "G004", # F-strings on logging
+    "B008", # Typer Options
+    "C901"
 ]
 fixable = ["ALL"]
 unfixable = []

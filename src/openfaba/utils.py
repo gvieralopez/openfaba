@@ -16,7 +16,6 @@ from mutagen.id3._util import (
 # support for monkeypatching ends
 
 
-
 # Constructor of mutagen's class mutagen.id3._tags.ID3Header needs to be monkeypatched.
 # Out of the box it raises exception when trying to delete ID3 tags where header size
 # is not synchsafe (e.g. indicating that the chunk is playable MP3 stream part).
@@ -35,28 +34,25 @@ def id3header_constructor_monkeypatch(self, fileobj=None):
     if len(data) != 10:
         raise ID3NoHeaderError("%s: too small" % fn)
 
-    id3, vmaj, vrev, flags, size = struct.unpack('>3sBBB4s', data)
+    id3, vmaj, vrev, flags, size = struct.unpack(">3sBBB4s", data)
     self._flags = flags
     self.size = BitPaddedInt(size) + 10
     self.version = (2, vmaj, vrev)
 
-    if id3 != b'ID3':
+    if id3 != b"ID3":
         raise ID3NoHeaderError("%r doesn't start with an ID3 tag" % fn)
 
     if vmaj not in [2, 3, 4]:
-        raise ID3UnsupportedVersionError("%r ID3v2.%d not supported"
-                                         % (fn, vmaj))
+        raise ID3UnsupportedVersionError("%r ID3v2.%d not supported" % (fn, vmaj))
 
     # Monkeypatch root cause - we need to be able to delete even incorrect ID3 tags...
-    #if not BitPaddedInt.has_valid_padding(size):
+    # if not BitPaddedInt.has_valid_padding(size):
     #    raise error("Header size not synchsafe")
 
-    if (self.version >= self._V24) and (flags & 0x0f):
-        raise error(
-            "%r has invalid flags %#02x" % (fn, flags))
-    elif (self._V23 <= self.version < self._V24) and (flags & 0x1f):
-        raise error(
-            "%r has invalid flags %#02x" % (fn, flags))
+    if (self.version >= self._V24) and (flags & 0x0F):
+        raise error("%r has invalid flags %#02x" % (fn, flags))
+    elif (self._V23 <= self.version < self._V24) and (flags & 0x1F):
+        raise error("%r has invalid flags %#02x" % (fn, flags))
 
     if self.f_extended:
         extsize_data = read_full(fileobj, 4)
@@ -82,27 +78,15 @@ def id3header_constructor_monkeypatch(self, fileobj=None):
             # Haven't seen any MP3s broken in this way, but safe to say we
             # should be able to remove ID3s on them too :-)
             # Monkey-patched out
-            #if not BitPaddedInt.has_valid_padding(extsize_data):
+            # if not BitPaddedInt.has_valid_padding(extsize_data):
             #    raise error(
             #        "Extended header size not synchsafe")
         else:
             # "Where the 'Extended header size', currently 6 or 10 bytes,
             # excludes itself."
-            extsize = struct.unpack('>L', extsize_data)[0]
+            extsize = struct.unpack(">L", extsize_data)[0]
 
         if extsize < 0:
             raise error("invalid extended header size")
 
         self._extdata = read_full(fileobj, extsize)
-
-class Unbuffered(object):
-   def __init__(self, stream):
-       self.stream = stream
-   def write(self, data):
-       self.stream.write(data)
-       self.stream.flush()
-   def writelines(self, datas):
-       self.stream.writelines(datas)
-       self.stream.flush()
-   def __getattr__(self, attr):
-       return getattr(self.stream, attr)
