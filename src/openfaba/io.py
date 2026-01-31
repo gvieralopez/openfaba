@@ -40,6 +40,10 @@ def convert_mki_to_mp3(mki_file: Path, mp3_file: Path) -> None:
         sys.exit(1)
 
 
+def collect_all_mp3_files_in_folder(source: Path) -> list[Path]:
+    return sorted(p for p in source.rglob("*.mp3") if p.is_file())
+
+
 def _clear_tags_and_set_title(mp3_file: Path, new_title: str) -> None:
     tags = MP3(mp3_file, ID3=ID3)
 

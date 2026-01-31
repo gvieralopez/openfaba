@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def obfuscate_figure_mp3_files(
-    figure_id: str, source_mp3_files: list[Path], faba_library: Path
+    figure_id: str, source_mp3_files: list[Path], faba_library: Path, append: bool = False
 ) -> None:
     """
     Obfuscate a sequence of MP3 files for a single Faba figure.
@@ -32,6 +32,11 @@ def obfuscate_figure_mp3_files(
         Ordered collection of source MP3 files to obfuscate for this figure.
     faba_library:
         Root path of the target Faba library (typically an ``MKI01`` folder).
+    append:
+        When True, MP3 files will be appended to an existing figure. New
+        tracks are numbered after the highest existing ``.MKI`` file. When
+        False (default) the figure will be created/overwritten starting at
+        track 1.
     """
     if not source_mp3_files:
         logger.warning("No MP3 files provided for figure `%s`", figure_id)
@@ -40,10 +45,20 @@ def obfuscate_figure_mp3_files(
     logger.info("Converting files for figure: `%s`", figure_id)
 
     figure_path = faba_library / f"K{figure_id}"
+    if append and not figure_path.exists():
+        raise ValueError("You cannot append tracks to an unexisting figure")
     figure_path.mkdir(parents=True, exist_ok=True)
 
-    for index, mp3_file in enumerate(sorted(source_mp3_files), start=1):
-        logger.info("Converting file %s [%d/%d]", mp3_file.name, index, len(source_mp3_files))
+    existing_mki = sorted(p for p in figure_path.iterdir() if p.suffix.lower() == ".mki")
+    start_index = (len(existing_mki) + 1) if append else 1
+
+    for index, mp3_file in enumerate(sorted(source_mp3_files), start=start_index):
+        logger.info(
+            "Converting file %s [%d/%d]",
+            mp3_file.name,
+            index - start_index + 1,
+            len(source_mp3_files),
+        )
 
         file_number = f"{index:02d}"
 

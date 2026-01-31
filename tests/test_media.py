@@ -2,7 +2,14 @@ import logging
 import tempfile
 from pathlib import Path
 
-from openfaba.media import deobfuscate_mki_library, obfuscate_mp3_library
+import pytest
+
+from openfaba.media import (
+    deobfuscate_figure_mki_files,
+    deobfuscate_mki_library,
+    obfuscate_figure_mp3_files,
+    obfuscate_mp3_library,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,3 +59,35 @@ def test_obfuscate_deobfuscate_cycle(mki_library: Path) -> None:
                 assert original_content == new_content, f"File content mismatch for {original_rel}"
 
         logger.info(f"Successfully verified {len(original_files)} files in cycle test")
+
+
+def test_insert_and_extend_cycle(mki_library: Path) -> None:
+    with tempfile.TemporaryDirectory() as td:
+        td_path = Path(td)
+
+        # Deobfuscate a small figure from the fixture to obtain valid MP3 files
+        deob_dir = td_path / "deob"
+        deob_dir.mkdir()
+        converted = deobfuscate_figure_mki_files("3001", mki_library, deob_dir)
+        assert converted > 0
+
+        source_mp3 = sorted(p for p in (deob_dir / "K3001").rglob("*.mp3"))
+        assert source_mp3, "deobfuscation did not produce mp3 files"
+
+        # Create a fresh FABA library and insert the figure
+        faba_lib = td_path / "faba"
+        faba_lib.mkdir()
+
+        obfuscate_figure_mp3_files("3001", source_mp3, faba_lib, append=False)
+        kpath = faba_lib / "K3001"
+        mkis = sorted(p for p in kpath.iterdir() if p.suffix.lower() == ".mki")
+        assert len(mkis) == len(source_mp3)
+
+        # Append the same files again
+        obfuscate_figure_mp3_files("3001", source_mp3, faba_lib, append=True)
+        mkis2 = sorted(p for p in kpath.iterdir() if p.suffix.lower() == ".mki")
+        assert len(mkis2) == len(source_mp3) * 2
+
+        # Appending to a non-existing figure should raise
+        with pytest.raises(ValueError):
+            obfuscate_figure_mp3_files("9999", source_mp3, faba_lib, append=True)

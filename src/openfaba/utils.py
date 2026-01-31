@@ -21,7 +21,7 @@ from mutagen.id3._util import (
 # is not synchsafe (e.g. indicating that the chunk is playable MP3 stream part).
 # Since we're only trying to get rid of all ID3 tags, we don't worry about their quality...
 @convert_error(IOError, error)
-def id3header_constructor_monkeypatch(self, fileobj=None):
+def id3header_constructor_monkeypatch(self, fileobj=None) -> None:
     """Raises ID3NoHeaderError, ID3UnsupportedVersionError or error"""
 
     if fileobj is None:
