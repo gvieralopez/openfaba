@@ -2,10 +2,11 @@ import logging
 import sys
 from pathlib import Path
 
-from mutagen.id3 import ID3, TIT2
+from mutagen.id3 import ID3, TIT2  # type:ignore [attr-defined]
 from mutagen.mp3 import MP3
 
 from openfaba.consts import BYTE_HIGH_NIBBLE, BYTE_LOW_NIBBLE_EVEN, BYTE_LOW_NIBBLE_ODD
+from openfaba.utils import allow_invalid_synchsafe_in_mutagen
 
 logger = logging.getLogger(__name__)
 
@@ -45,16 +46,16 @@ def collect_all_mp3_files_in_folder(source: Path) -> list[Path]:
 
 
 def _clear_tags_and_set_title(mp3_file: Path, new_title: str) -> None:
-    tags = MP3(mp3_file, ID3=ID3)
+    with allow_invalid_synchsafe_in_mutagen():
+        tags = MP3(mp3_file, ID3=ID3)
+        # If title already matches, skip to preserve exact original bytes
+        if "TIT2" in tags and len(tags) == 1 and str(tags["TIT2"].text[0]) == new_title:
+            return
 
-    # If title already matches, skip to preserve exact original bytes
-    if "TIT2" in tags and len(tags) == 1 and str(tags["TIT2"].text[0]) == new_title:
-        return
-
-    # Ensure we write the title as UTF-16 (Encoding 1) and as a list of text
-    tags.delete()
-    tags["TIT2"] = TIT2(encoding=1, text=[new_title])
-    tags.save(v2_version=3, padding=lambda x: 0)
+        # Ensure we write the title as UTF-16 (Encoding 1) and as a list of text
+        tags.delete()
+        tags["TIT2"] = TIT2(encoding=1, text=[new_title])
+        tags.save(v2_version=3, padding=lambda x: 0)
 
 
 def _convert_mp3_to_mki(mp3_file: Path, mki_file: Path) -> None:

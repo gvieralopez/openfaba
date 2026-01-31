@@ -5,10 +5,7 @@ import tempfile
 from collections import defaultdict
 from pathlib import Path
 
-import mutagen
-
 from openfaba.io import clear_tags_and_set_title, convert_mki_to_mp3, convert_mp3_to_mki
-from openfaba.utils import id3header_constructor_monkeypatch
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +102,6 @@ def obfuscate_mp3_library(
         Total number of MP3 files processed.
     """
     # Monkeypatch to tolerate malformed ID3 headers
-    mutagen.id3._tags.ID3Header.__init__ = id3header_constructor_monkeypatch
 
     all_mp3_files = sorted(p for p in faba_library_mp3.rglob("*") if p.suffix.lower() == ".mp3")
     files_by_figure: defaultdict[str, list[Path]] = defaultdict(list)
