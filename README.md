@@ -31,8 +31,7 @@ Use this tool responsibly and at your own risk.
 
 ## 🚀 Prerequisites
 
-Before working with this project, make sure you have [uv](https://docs.astral.sh/uv/)  
-installed. 👉 Install guide: [uv docs](https://docs.astral.sh/uv/getting-started/installation/)
+Before working with this project, make sure you have [uv](https://docs.astral.sh/uv/) installed. 👉 Install guide: [uv docs](https://docs.astral.sh/uv/getting-started/installation/)
 
 If you are a developer and want to contribute to this project, you may want to have 
 [make](https://www.gnu.org/software/make/) installed as well.
