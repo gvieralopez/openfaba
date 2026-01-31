@@ -32,15 +32,16 @@ def insert(
     """Create a new FABA figure from a folder of MP3 files. Fails if figure exists."""
 
     if not (fid := normalize_figure_id(figure_id)):
-        raise typer.BadParameter("figure-id must be a 4-digit number")
+        typer.echo("figure-id must be a 4-digit number")
+        raise typer.Exit(code=1)
 
     figure_path = faba_library / f"K{fid}"
     if figure_path.exists():
         if not figure_path.is_dir():
-            typer.echo(f"Error: Path for Figure K{fid} already exists as a file.", err=True)
+            typer.echo(f"Error: Path for Figure K{fid} already exists as a file.")
             raise typer.Exit(code=1)
         elif len(list(figure_path.iterdir())) != 0:
-            typer.echo(f"Error: Figure K{fid} already exists as a not empty folder.", err=True)
+            typer.echo(f"Error: Figure K{fid} already exists as a not empty folder.")
             raise typer.Exit(code=1)
 
     if not (mp3_files := collect_all_mp3_files_in_folder(source)):
@@ -62,11 +63,12 @@ def extend(
     """Append MP3 files to an existing figure. Does not overwrite existing tracks."""
 
     if not (fid := normalize_figure_id(figure_id)):
-        raise typer.BadParameter("figure-id must be a 4-digit number")
+        typer.echo("figure-id must be a 4-digit number")
+        raise typer.Exit(code=1)
 
     figure_path = faba_library / f"K{fid}"
     if not figure_path.exists():
-        typer.echo(f"Error: Figure K{fid} does not exist in the library.", err=True)
+        typer.echo(f"Error: Figure K{fid} does not exist in the library.")
         raise typer.Exit(code=1)
 
     if not (mp3_files := collect_all_mp3_files_in_folder(source)):
@@ -93,7 +95,8 @@ def replace(
     """Delete an existing figure and recreate it from MP3 files."""
 
     if not (fid := normalize_figure_id(figure_id)):
-        raise typer.BadParameter("figure-id must be a 4-digit number")
+        typer.echo("figure-id must be a 4-digit number")
+        raise typer.Exit(code=1)
 
     figure_path = faba_library / f"K{fid}"
     if figure_path.exists():
@@ -122,7 +125,8 @@ def extract(
     """Extract a single figure from a FABA library into MP3 files."""
 
     if not (fid := normalize_figure_id(figure_id)):
-        raise typer.BadParameter("figure-id must be a 4-digit number")
+        typer.echo("figure-id must be a 4-digit number")
+        raise typer.Exit(code=1)
     output.mkdir(parents=True, exist_ok=True)
 
     converted = deobfuscate_figure_mki_files(fid, faba_library, output)
