@@ -45,7 +45,7 @@ def insert(
             raise typer.Exit(code=1)
 
     if not (mp3_files := collect_all_mp3_files_in_folder(source)):
-        typer.echo("No MP3 files found in the source folder.", err=True)
+        typer.echo("No MP3 files found in the source folder.")
         raise typer.Exit(code=1)
 
     obfuscate_figure_mp3_files(fid, mp3_files, faba_library)
@@ -72,16 +72,12 @@ def extend(
         raise typer.Exit(code=1)
 
     if not (mp3_files := collect_all_mp3_files_in_folder(source)):
-        typer.echo("No MP3 files found in the source folder.", err=True)
+        typer.echo("No MP3 files found in the source folder.")
         raise typer.Exit(code=1)
 
     obfuscate_figure_mp3_files(fid, mp3_files, faba_library, append=True)
-    added = len(mp3_files)
-    if added == 0:
-        typer.echo("No files were appended.", err=True)
-        raise typer.Exit(code=1)
 
-    typer.echo(f"Extended figure K{fid}. Appended {added} tracks.")
+    typer.echo(f"Extended figure K{fid}. Appended {len(mp3_files)} tracks.")
 
 
 @app.command()
@@ -107,7 +103,7 @@ def replace(
             raise typer.Exit(code=1) from exc
 
     if not (mp3_files := collect_all_mp3_files_in_folder(source)):
-        typer.echo("No MP3 files found in the source folder.", err=True)
+        typer.echo("No MP3 files found in the source folder.")
         raise typer.Exit(code=1)
 
     obfuscate_figure_mp3_files(fid, mp3_files, faba_library)
@@ -131,7 +127,7 @@ def extract(
 
     converted = deobfuscate_figure_mki_files(fid, faba_library, output)
     if converted == 0:
-        typer.echo(f"No MKI files found for figure K{fid}.", err=True)
+        typer.echo(f"No MKI files found for figure K{fid}.")
         raise typer.Exit(code=1)
 
     typer.echo(f"Extracted figure K{fid}. Converted {converted} files.")
@@ -149,7 +145,7 @@ def obfuscate(
     """Obfuscate an entire MP3 library into a FABA MKI library."""
     converted = obfuscate_mp3_library(mp3_library, faba_library)
     if converted == 0:
-        typer.echo("No MP3 files found in the source library.", err=True)
+        typer.echo("No MP3 files found in the source library.")
         raise typer.Exit(code=1)
 
     typer.echo(f"Obfuscated library. Converted {converted} files.")
@@ -167,7 +163,7 @@ def deobfuscate(
 
     converted = deobfuscate_mki_library(faba_library, mp3_library)
     if converted == 0:
-        typer.echo("No MKI files found in the FABA library.", err=True)
+        typer.echo("No MKI files found in the FABA library.")
         raise typer.Exit(code=1)
 
     typer.echo(f"Deobfuscated library. Converted {converted} files.")
