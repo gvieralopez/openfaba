@@ -240,7 +240,7 @@ wheels = [
 
 [[package]]
 name = "openfaba"
-version = "0.1.2b0"
+version = "0.1.2"
 source = { editable = "." }
 dependencies = [
     { name = "mutagen" },
