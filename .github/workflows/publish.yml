@@ -1,0 +1,70 @@
+name: Publish
+
+defaults:
+  run:
+    shell: bash
+
+on:
+  workflow_run:
+    workflows: [QA]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install Python dependencies
+        run: uv sync --all-groups
+
+      - name: Create new stable version number
+        run: make version VERSION_TYPE=tag VERSION_TAG=final DRY=0
+
+      - name: Read project version
+        id: version
+        run: |
+          VERSION=$(python -c "from pathlib import Path; import tomllib; data=tomllib.loads(Path('pyproject.toml').read_text()); print(data['project']['version'])")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit release and create tag
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          git add -A
+          git diff --cached --quiet || git commit -m "Release $VERSION"
+          git tag -a "v$VERSION" -m "Release $VERSION" || true
+          git push origin HEAD:main
+          git push origin --tags
+
+      - name: Build distributable files
+        run: make build
+
+      - name: Upload package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+      - name: Bump version to next beta and push
+        run: |
+          make version VERSION_TYPE=minor VERSION_TAG=beta DRY=0
+          git add -A
+          git diff --cached --quiet || git commit -m "Prepare next beta"
+          git push origin HEAD:main

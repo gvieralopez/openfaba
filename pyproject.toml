@@ -1,6 +1,6 @@
 [project]
 name = "openfaba"
-version = "0.1.0"
+version = "0.1.0-beta0"
 description = "A modern reimplementation of redele."
 readme = "README.md"
 requires-python = ">= 3.13"
@@ -110,7 +110,7 @@ env_override_existing_values = 1
 env_files = [".env.test"]
 
 [tool.bumpver]
-current_version = "0.1.0"
+current_version = "0.1.0-beta0"
 version_pattern = "MAJOR.MINOR.PATCH[-TAGNUM]"
 
 [tool.bumpver.file_patterns]

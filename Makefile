@@ -1,5 +1,5 @@
 # Makefile for QA checks (lint, format, type-check, tests) and tasks (build, clean, run)
-
+SHELL := /bin/bash
 .PHONY: qa lint format typecheck test clean run build version  
 .ONESHELL: version
 
