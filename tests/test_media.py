@@ -58,7 +58,7 @@ def test_obfuscate_deobfuscate_cycle(mki_library: Path) -> None:
 
                 assert original_content == new_content, f"File content mismatch for {original_rel}"
 
-        logger.info(f"Successfully verified {len(original_files)} files in cycle test")
+        logger.info("Successfully verified %d files in cycle test", len(original_files))
 
 
 def test_insert_and_extend_cycle(mki_library: Path) -> None:

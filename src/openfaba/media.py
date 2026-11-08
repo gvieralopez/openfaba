@@ -59,9 +59,8 @@ def obfuscate_figure_mp3_files(
 
         file_number = f"{index:02d}"
 
-        temp_handle = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
-        temp_mp3 = Path(temp_handle.name)
-        temp_handle.close()  # Required for Windows compatibility
+        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_handle:
+            temp_mp3 = Path(temp_handle.name)
 
         try:
             shutil.copy(mp3_file, temp_mp3)
