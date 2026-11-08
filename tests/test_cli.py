@@ -65,16 +65,7 @@ def test_insert_success(
 
 def test_insert_invalid_figure_id() -> None:
     result = runner.invoke(
-        app,
-        [
-            "insert",
-            "--figure-id",
-            "abcd",
-            "--source",
-            ".",
-            "--faba-library",
-            ".",
-        ],
+        app, ["insert", "--figure-id", "abcd", "--source", ".", "--faba-library", "."]
     )
 
     assert result.exit_code != 0
@@ -202,16 +193,7 @@ def test_extend_missing_figure(fake_source_dir: Path, fake_faba_library: Path) -
 
 def test_extend_invalid_figure_id() -> None:
     result = runner.invoke(
-        app,
-        [
-            "extend",
-            "--figure-id",
-            "abc",
-            "--source",
-            ".",
-            "--faba-library",
-            ".",
-        ],
+        app, ["extend", "--figure-id", "abc", "--source", ".", "--faba-library", "."]
     )
 
     assert result.exit_code == 1
@@ -278,16 +260,7 @@ def test_replace_removes_existing(
 
 def test_replace_invalid_figure_id() -> None:
     result = runner.invoke(
-        app,
-        [
-            "replace",
-            "--figure-id",
-            "xyz",
-            "--source",
-            ".",
-            "--faba-library",
-            ".",
-        ],
+        app, ["replace", "--figure-id", "xyz", "--source", ".", "--faba-library", "."]
     )
 
     assert result.exit_code == 1
@@ -369,16 +342,7 @@ def test_extract_success(monkeypatch: MonkeyPatch, fake_faba_library: Path, tmp_
 
 def test_extract_invalid_figure_id() -> None:
     result = runner.invoke(
-        app,
-        [
-            "extract",
-            "--figure-id",
-            "nope",
-            "--faba-library",
-            ".",
-            "--output",
-            ".",
-        ],
+        app, ["extract", "--figure-id", "nope", "--faba-library", ".", "--output", "."]
     )
 
     assert result.exit_code == 1

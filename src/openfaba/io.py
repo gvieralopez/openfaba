@@ -26,7 +26,7 @@ def convert_mp3_to_mki(mp3_file: Path, mki_file: Path) -> None:
     try:
         _convert_mp3_to_mki(mp3_file, mki_file)
         logger.info(f"Conversion complete. Output file: {mki_file}")
-    except IOError as e:
+    except OSError as e:
         logger.error(f"Error processing {mp3_file}: {e}")
         sys.exit(1)
 
@@ -36,7 +36,7 @@ def convert_mki_to_mp3(mki_file: Path, mp3_file: Path) -> None:
     try:
         _convert_mki_to_mp3(mki_file, mp3_file)
         logger.info(f"Conversion complete. Output file: {mp3_file}")
-    except IOError as e:
+    except OSError as e:
         logger.error(f"Error processing {mki_file}: {e}")
         sys.exit(1)
 
