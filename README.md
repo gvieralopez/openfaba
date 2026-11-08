@@ -1,4 +1,31 @@
+<div align="center">
+
+<img src="assets/logo.svg" alt="" width="96">
+
 # openFABA
+
+**A modern reimplementation of redele.**
+
+[![QA](https://github.com/gvieralopez/openfaba/actions/workflows/qa.yml/badge.svg)](https://github.com/gvieralopez/openfaba/actions/workflows/qa.yml)
+[![Release](https://img.shields.io/github/v/release/gvieralopez/openfaba?label=release)](https://github.com/gvieralopez/openfaba/releases/latest)
+[![Python 3.13+](https://img.shields.io/badge/python-3.13%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/openfaba)](https://pypi.org/project/openfaba/)
+<br>
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
+
+<!-- Badges to move into the rows above once they apply:
+[![Docker image](https://img.shields.io/badge/docker-ghcr.io-2496ED?logo=docker&logoColor=white)](https://github.com/gvieralopez/openfaba/pkgs/container/openfaba)
+[![Docs](https://readthedocs.org/projects/openfaba/badge/?version=latest)](https://openfaba.readthedocs.io)
+-->
+
+[Quick start](#quick-start) · [Usage](#usage) · [Roadmap](#roadmap) · [Resources](#resources) · [Development](#development)
+
+</div>
+
+---
 
 **openFABA**  converts regular MP3 files into the special format used by the FABA storytelling
 box and also lets you extract playable MP3s back from a FABA device. This project builds upon the 
@@ -30,7 +57,7 @@ pip install openfaba
 ```
 
 If you are a developer, want to run tests, install from source or follow developer
-instructions see the developers guide: [DEVELOPERS.md](DEVELOPERS.md)
+instructions see the developers guide: [DEVELOPMENT.md](DEVELOPMENT.md)
 
 ## Usage
 
@@ -117,7 +144,7 @@ openfaba obfuscate --mp3-library /home/user/mp3_library --faba-library /mnt/faba
 	that looks up and prints human-friendly metadata from the CSV (name, tracks,
 	language, notes, and source link).
 - **Auto-update script (scraper)** — include a script that can periodically fetch
-	metadata from MyFaba and update `figures.csv`; documented in `DEVELOPERS.md`.
+	metadata from MyFaba and update `figures.csv`; documented in `DEVELOPMENT.md`.
 - **Multi-device support (FABA+)** — plan and expose an abstraction layer so the
 	obfuscation/deobfuscation pipeline can target multiple FABA-compatible devices
 	(different file layouts or obfuscation).
@@ -131,8 +158,18 @@ openfaba obfuscate --mp3-library /home/user/mp3_library --faba-library /mnt/faba
 - [Hacking MyFaba article](https://medium.com/@wansors/hacking-myfaba-an-educational-journey-into-storytelling-box-customization-cc6fc5db719d)
 - [Myfaba Store](https://www.myfaba.it/prodotti-sonori/acquista-per-tipologia/personaggi-sonori/)
 
+## Development
+
+Setup, QA, docs and releases: [DEVELOPMENT.md](DEVELOPMENT.md).
+
+## Contributing
+
+Issues and pull requests are welcome; `make qa` must pass.
+
+## License
+
+MIT: see [LICENSE](LICENSE).
 
 ---
 
-If you'd like the full developer guide (installation from source, tests, linters,
-and build steps), open [DEVELOPERS.md](DEVELOPERS.md).
+<sub>🚀 Project starter provided by [Cookie Pyrate v1.1.2](https://github.com/gvieralopez/cookie-pyrate/tree/v1.1.2)</sub>

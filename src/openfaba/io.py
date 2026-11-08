@@ -15,9 +15,9 @@ def clear_tags_and_set_title(mp3_file: Path, new_title: str) -> None:
     """Remove all MP3 tags and set a single title tag"""
     try:
         _clear_tags_and_set_title(mp3_file, new_title)
-        logger.info(f"Title updated for {mp3_file}")
+        logger.info("Title updated for %s", mp3_file)
     except Exception as e:
-        logger.error(f"Error processing {mp3_file}: {e}")
+        logger.error("Error processing %s: %s", mp3_file, e)
         sys.exit(1)
 
 
@@ -25,9 +25,9 @@ def convert_mp3_to_mki(mp3_file: Path, mki_file: Path) -> None:
     """Apply custom byte transformation to an mp3 file"""
     try:
         _convert_mp3_to_mki(mp3_file, mki_file)
-        logger.info(f"Conversion complete. Output file: {mki_file}")
-    except IOError as e:
-        logger.error(f"Error processing {mp3_file}: {e}")
+        logger.info("Conversion complete. Output file: %s", mki_file)
+    except OSError as e:
+        logger.error("Error processing %s: %s", mp3_file, e)
         sys.exit(1)
 
 
@@ -35,9 +35,9 @@ def convert_mki_to_mp3(mki_file: Path, mp3_file: Path) -> None:
     """Reverse the custom byte transformation to restore the original mp3 file"""
     try:
         _convert_mki_to_mp3(mki_file, mp3_file)
-        logger.info(f"Conversion complete. Output file: {mp3_file}")
-    except IOError as e:
-        logger.error(f"Error processing {mki_file}: {e}")
+        logger.info("Conversion complete. Output file: %s", mp3_file)
+    except OSError as e:
+        logger.error("Error processing %s: %s", mki_file, e)
         sys.exit(1)
 
 
@@ -54,8 +54,8 @@ def _clear_tags_and_set_title(mp3_file: Path, new_title: str) -> None:
 
         # Ensure we write the title as UTF-16 (Encoding 1) and as a list of text
         tags.delete()
-        tags["TIT2"] = TIT2(encoding=1, text=[new_title])
-        tags.save(v2_version=3, padding=lambda x: 0)
+        tags["TIT2"] = TIT2(encoding=1, text=[new_title])  # type: ignore[no-untyped-call]
+        tags.save(v2_version=3, padding=lambda _: 0)
 
 
 def _convert_mp3_to_mki(mp3_file: Path, mki_file: Path) -> None:

@@ -1,3 +1,5 @@
+FIGURE_ID_DIGITS = 4
+
 BYTE_HIGH_NIBBLE = [
     [
         0x30,

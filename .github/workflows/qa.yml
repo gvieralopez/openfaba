@@ -1,25 +1,14 @@
 name: QA
 
 on:
-  push:
   pull_request:
+  push:
+    branches: [main]
 
 jobs:
   qa:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: astral-sh/setup-uv@v3
-        with:
-          enable-cache: true
-
-      - name: Install Python dependencies
-        run: uv sync
-
-      - name: Run QA Checks (ruff, mypy)
-        run: make qa
-
-      - name: Run Unit Tests (pytest)
-        run: make test
+    uses: gvieralopez/cookie-pyrate/.github/workflows/reusable-qa.yml@v1.1.2
+    with:
+      cookie-pyrate-ref: v1.1.2
+      python-version: "3.13"
+      test-python-versions: '["3.14", "3.15"]'

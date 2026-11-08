@@ -1,10 +1,12 @@
 import logging
 import shutil
 from pathlib import Path
+from typing import Annotated
 
 import typer
 from typer import Typer
 
+from openfaba.consts import FIGURE_ID_DIGITS
 from openfaba.io import collect_all_mp3_files_in_folder
 from openfaba.media import (
     deobfuscate_figure_mki_files,
@@ -16,19 +18,23 @@ from openfaba.media import (
 logger = logging.getLogger(__name__)
 app = Typer(help="Create/Manage FABA figures and libraries")
 
+FigureId = Annotated[str, typer.Option("--figure-id", "-f", help="Figure ID (4 digits)")]
+SourceFolder = Annotated[
+    Path, typer.Option("--source", "-s", exists=True, file_okay=False, dir_okay=True)
+]
+FabaLibrary = Annotated[
+    Path, typer.Option("--faba-library", "-b", exists=True, file_okay=False, dir_okay=True)
+]
+
 
 def normalize_figure_id(figure_id: str) -> str | None:
-    return f"{int(figure_id):04d}" if (figure_id.isdigit() and len(figure_id) <= 4) else None
+    if figure_id.isdigit() and len(figure_id) <= FIGURE_ID_DIGITS:
+        return f"{int(figure_id):0{FIGURE_ID_DIGITS}d}"
+    return None
 
 
 @app.command()
-def insert(
-    figure_id: str = typer.Option(..., "--figure-id", "-f", help="Figure ID (4 digits)"),
-    source: Path = typer.Option(..., "--source", "-s", exists=True, file_okay=False, dir_okay=True),
-    faba_library: Path = typer.Option(
-        ..., "--faba-library", "-b", exists=True, file_okay=False, dir_okay=True
-    ),
-) -> None:
+def insert(figure_id: FigureId, source: SourceFolder, faba_library: FabaLibrary) -> None:
     """Create a new FABA figure from a folder of MP3 files. Fails if figure exists."""
 
     if not (fid := normalize_figure_id(figure_id)):
@@ -53,13 +59,7 @@ def insert(
 
 
 @app.command()
-def extend(
-    figure_id: str = typer.Option(..., "--figure-id", "-f", help="Figure ID (4 digits)"),
-    source: Path = typer.Option(..., "--source", "-s", exists=True, file_okay=False, dir_okay=True),
-    faba_library: Path = typer.Option(
-        ..., "--faba-library", "-b", exists=True, file_okay=False, dir_okay=True
-    ),
-) -> None:
+def extend(figure_id: FigureId, source: SourceFolder, faba_library: FabaLibrary) -> None:
     """Append MP3 files to an existing figure. Does not overwrite existing tracks."""
 
     if not (fid := normalize_figure_id(figure_id)):
@@ -81,13 +81,7 @@ def extend(
 
 
 @app.command()
-def replace(
-    figure_id: str = typer.Option(..., "--figure-id", "-f", help="Figure ID (4 digits)"),
-    source: Path = typer.Option(..., "--source", "-s", exists=True, file_okay=False, dir_okay=True),
-    faba_library: Path = typer.Option(
-        ..., "--faba-library", "-b", exists=True, file_okay=False, dir_okay=True
-    ),
-) -> None:
+def replace(figure_id: FigureId, source: SourceFolder, faba_library: FabaLibrary) -> None:
     """Delete an existing figure and recreate it from MP3 files."""
 
     if not (fid := normalize_figure_id(figure_id)):
@@ -112,11 +106,9 @@ def replace(
 
 @app.command()
 def extract(
-    figure_id: str = typer.Option(..., "--figure-id", "-f", help="Figure ID (4 digits)"),
-    faba_library: Path = typer.Option(
-        ..., "--faba-library", "-b", exists=True, file_okay=False, dir_okay=True
-    ),
-    output: Path = typer.Option(..., "--output", "-o", file_okay=False, dir_okay=True),
+    figure_id: FigureId,
+    faba_library: FabaLibrary,
+    output: Annotated[Path, typer.Option("--output", "-o", file_okay=False, dir_okay=True)],
 ) -> None:
     """Extract a single figure from a FABA library into MP3 files."""
 
@@ -135,12 +127,10 @@ def extract(
 
 @app.command()
 def obfuscate(
-    mp3_library: Path = typer.Option(
-        ..., "--mp3-library", "-m", exists=True, file_okay=False, dir_okay=True
-    ),
-    faba_library: Path = typer.Option(
-        ..., "--faba-library", "-b", exists=True, file_okay=False, dir_okay=True
-    ),
+    mp3_library: Annotated[
+        Path, typer.Option("--mp3-library", "-m", exists=True, file_okay=False, dir_okay=True)
+    ],
+    faba_library: FabaLibrary,
 ) -> None:
     """Obfuscate an entire MP3 library into a FABA MKI library."""
     converted = obfuscate_mp3_library(mp3_library, faba_library)
@@ -153,10 +143,10 @@ def obfuscate(
 
 @app.command()
 def deobfuscate(
-    faba_library: Path = typer.Option(
-        ..., "--faba-library", "-b", exists=True, file_okay=False, dir_okay=True
-    ),
-    mp3_library: Path = typer.Option(..., "--mp3-library", "-m", file_okay=False, dir_okay=True),
+    faba_library: FabaLibrary,
+    mp3_library: Annotated[
+        Path, typer.Option("--mp3-library", "-m", file_okay=False, dir_okay=True)
+    ],
 ) -> None:
     """Deobfuscate an entire FABA MKI library back into MP3 files."""
     mp3_library.mkdir(parents=True, exist_ok=True)
